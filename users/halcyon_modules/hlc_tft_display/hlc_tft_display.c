@@ -30,7 +30,7 @@ static const char *scroll =      "Scroll";
 
 static painter_font_handle_t Retron27;
 static painter_font_handle_t Retron27_underline;
-static painter_image_handle_t layer_number;
+//static painter_image_handle_t layer_number;
 backlight_config_t backlight_config;
 
 static uint16_t lcd_surface_fb[135*240];
@@ -171,6 +171,27 @@ void add_cell_cluster() {
     }
 }
 
+const char* layer_names[7] = {
+    "Base",
+    "Sym",
+    "Ext",
+    "Num",
+    "Game",
+    "Fun",
+    "Adj"
+};
+struct HSV { uint8_t h, s, v; };
+const struct HSV layer_colors[7] = {
+    {HSV_LAYER_0},
+    {HSV_LAYER_1},
+    {HSV_LAYER_2},
+    {HSV_LAYER_3},
+    {HSV_LAYER_4},
+    {HSV_LAYER_5},
+    {HSV_LAYER_6}
+};
+
+
 void update_display(void) {
     static bool first_run_led = false;
     static bool first_run_layer = false;
@@ -193,46 +214,34 @@ void update_display(void) {
     }
 
     if(last_layer_state != layer_state || first_run_layer == false) {
-        switch (get_highest_layer(layer_state|default_layer_state)) {
-        case 0:
-            layer_number = qp_load_image_mem(gfx_0);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_0, HSV_BLACK);
-            break;
-        case 1:
-            layer_number = qp_load_image_mem(gfx_1);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_1, HSV_BLACK);
-            break;
-        case 2:
-            layer_number = qp_load_image_mem(gfx_2);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_2, HSV_BLACK);
-            break;
-        case 3:
-            layer_number = qp_load_image_mem(gfx_3);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_3, HSV_BLACK);
-            break;
-        case 4:
-            layer_number = qp_load_image_mem(gfx_4);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_4, HSV_BLACK);
-            break;
-        case 5:
-            layer_number = qp_load_image_mem(gfx_5);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_5, HSV_BLACK);
-            break;
-        case 6:
-            layer_number = qp_load_image_mem(gfx_6);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_6, HSV_BLACK);
-            break;
-        case 7:
-            layer_number = qp_load_image_mem(gfx_7);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_7, HSV_BLACK);
-            break;
-        default:
-            layer_number = qp_load_image_mem(gfx_undef);
-            qp_drawimage_recolor(lcd_surface, 5, 5, layer_number, HSV_LAYER_UNDEF, HSV_BLACK);
+        uint8_t layer = get_highest_layer(layer_state|default_layer_state);
+        qp_rect(lcd_surface, 5, 5, 135, 5 + Retron27->line_height, HSV_BLACK, true);
+        if (layer <= 6) {
+            struct HSV color = layer_colors[layer];
+            qp_drawtext_recolor(lcd_surface, 5, 5, Retron27_underline, layer_names[layer],
+                                color.h, color.s, color.v, HSV_BLACK);
+        } else {
+            qp_drawtext_recolor(lcd_surface, 5, 5, Retron27_underline, "Undef", HSV_WHITE, HSV_BLACK);
         }
-        qp_close_image(layer_number);
         last_layer_state = layer_state;
         first_run_layer = true;
+    }
+    static uint8_t last_mod_keys = ~0;
+    uint8_t mod_keys = get_mods() | get_oneshot_mods();
+    if(mod_keys != last_mod_keys) {
+        static const uint8_t modBits[4] = {MOD_BIT(KC_LGUI), MOD_BIT(KC_LALT), MOD_BIT(KC_LSFT), MOD_BIT(KC_LCTL)};
+        static const struct HSV modColors[4] = {{HSV_GREEN}, {HSV_MAGENTA}, {HSV_YELLOW}, {HSV_CYAN}};
+        static const struct HSV modInactive = {0, 0, 20};
+        static const char modChars[4] = "MASC";
+        static const uint8_t text_width = 20;
+        for(uint8_t i = 0; i < 4; i++) {
+            struct HSV color = (mod_keys & modBits[i]) ? modColors[i] : modInactive;
+            char text[2] = " ";
+            text[0] = modChars[i];
+            bool isOneshot = get_oneshot_mods() & modBits[i];
+            qp_drawtext_recolor(lcd_surface, 5 + i * text_width, 5 + Retron27->line_height + 5,
+                                isOneshot ? Retron27_underline : Retron27, text, color.h, color.s, color.v, HSV_BLACK);
+        }
     }
 }
 

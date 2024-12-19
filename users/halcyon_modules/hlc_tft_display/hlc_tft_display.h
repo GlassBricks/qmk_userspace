@@ -15,13 +15,13 @@
 #define HSV_NUM_ON 142, 191, 245
 
 #define HSV_LAYER_0 0, 0, 160
-#define HSV_LAYER_3 0, 82, 255
-#define HSV_LAYER_1 23, 89, 255
-#define HSV_LAYER_2 43, 71, 255
-#define HSV_LAYER_4 77, 64, 255
-#define HSV_LAYER_6 131, 99, 255
+#define HSV_LAYER_1 50, 80, 255
+#define HSV_LAYER_2 135, 80, 255
+#define HSV_LAYER_3 190, 82, 255
+#define HSV_LAYER_4 25, 64, 255
+#define HSV_LAYER_5 166, 77, 255
+#define HSV_LAYER_6 217, 99, 255
 #define HSV_LAYER_7 154, 94, 255
-#define HSV_LAYER_5 176, 77, 255
 // #define HSV_LAYER_8 213, 56, 255
 #define HSV_LAYER_UNDEF 0, 255, 255
 

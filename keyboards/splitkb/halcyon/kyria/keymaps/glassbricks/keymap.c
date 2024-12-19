@@ -1,7 +1,6 @@
 // Copyright 2024 splitkb.com (support@splitkb.com)
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-
 #include QMK_KEYBOARD_H
 
 #include <features/custom_shift_keys.h>
@@ -108,7 +107,29 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      {KC_SLASH, KC_SLASH},
  };
  uint8_t NUM_CUSTOM_SHIFT_KEYS = sizeof(custom_shift_keys) / sizeof(custom_shift_key_t);
- // clang-format on
+// clang-format on
+
+#ifdef ENCODER_ENABLE
+bool encoder_update_user(uint8_t index, bool clockwise) {
+    // Volume up/down
+    if (clockwise) {
+        tap_code(KC_VOLU);
+    } else {
+        tap_code(KC_VOLD);
+    }
+    return false;
+}
+#endif
+
+// key configure stuff
+bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t* record) {
+    switch (keycode) {
+        case NUM_BLS:
+            return true;
+        default:
+            return false;
+    }
+}
 
 // custom key handling
 bool in_fake_keypress = false;
