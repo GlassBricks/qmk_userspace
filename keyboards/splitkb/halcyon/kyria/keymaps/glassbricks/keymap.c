@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include QMK_KEYBOARD_H
+#include <quantum.h>
 
 #include <features/custom_shift_keys.h>
 
@@ -226,4 +227,161 @@ bool process_record_user(uint16_t keycode, keyrecord_t* record) {
         return true;
     }
     return true;
+}
+
+// RGB
+// just color, not brightness
+typedef struct {
+    uint8_t h, s;
+} HS;
+
+// hues
+enum {
+    mag_red    = 250,
+    red        = 0,
+    orange     = 30 * 17 / 24,
+    lemon      = 40 * 17 / 24,
+    yellow     = 60 * 17 / 24,
+    gyellow    = 70 * 17 / 24,
+    lime       = 80 * 17 / 24,
+    green      = 100 * 17 / 24,
+    mint_green = 110 * 17 / 24,
+    blue_green = 150 * 17 / 24,
+    light_blue = 160 * 17 / 24,
+    dark_blue  = 240 * 17 / 24,
+    magenta    = 280 * 17 / 24,
+    purple     = 300 * 17 / 24,
+
+    ctrl_hue  = light_blue,
+    shift_hue = lemon,
+    alt_hue   = mag_red,
+    super_hue = lime,
+
+    base_hue = light_blue,
+    sym_hue  = yellow,
+    ext_hue  = light_blue,
+    num_hue  = purple,
+    yay_hue  = orange,
+    fun_hue  = dark_blue,
+    adj_hue  = magenta,
+};
+
+#define _US(hue) {hue, 220, 255}
+
+HSV layer_colors[_MAX + 1] = {
+    [_BASE] = _US(base_hue), [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_ADJ] = _US(adj_hue), [_YAY] = _US(yay_hue),
+};
+
+const uint8_t mod_hues[] = {ctrl_hue, shift_hue, alt_hue, super_hue};
+
+RGB color_add(RGB a, RGB b) {
+    RGB c;
+    c.r = MIN(a.r + b.r, 255);
+    c.g = MIN(a.g + b.g, 255);
+    c.b = MIN(a.b + b.b, 255);
+    return c;
+}
+
+const uint8_t top_underglow[]    = {0, 1, 2, 3, 31, 32, 33, 34};
+const uint8_t bottom_underglow[] = {4, 5, 35, 36};
+
+bool rgb_matrix_indicators_user(void) {
+    uint8_t layer = get_highest_layer(layer_state | default_layer_state);
+    if (layer > _MAX) return false;
+
+    uint8_t mods = get_mods() | get_oneshot_mods();
+
+    RGB mods_color = {0, 0, 0};
+    if (mods) {
+        int     pop_count = __builtin_popcount(mods);
+        uint8_t v         = rgb_matrix_config.hsv.v / pop_count;
+        if (mods & MOD_MASK_SHIFT) {
+            mods_color = color_add(mods_color, hsv_to_rgb((HSV){shift_hue, 255, v}));
+        }
+        if (mods & MOD_MASK_CTRL) {
+            mods_color = color_add(mods_color, hsv_to_rgb((HSV){ctrl_hue, 255, v}));
+        }
+        if (mods & MOD_MASK_ALT) {
+            mods_color = color_add(mods_color, hsv_to_rgb((HSV){alt_hue, 255, v}));
+        }
+        if (mods & MOD_MASK_GUI) {
+            mods_color = color_add(mods_color, hsv_to_rgb((HSV){super_hue, 255, v}));
+        }
+    }
+
+    HSV layer_hsv = layer_colors[layer];
+
+    RGB layer_color  = hsv_to_rgb((HSV){layer_hsv.h, layer_hsv.s, rgb_matrix_config.hsv.v});
+    RGB top_color    = layer_color;
+    RGB bottom_color = color_add(layer_color, mods_color);
+
+    for (int i = 0; i < sizeof(top_underglow) / sizeof(top_underglow[0]); i++) {
+        rgb_matrix_set_color(top_underglow[i], top_color.r, top_color.g, top_color.b);
+    }
+
+    for (int i = 0; i < sizeof(bottom_underglow) / sizeof(bottom_underglow[0]); i++) {
+        rgb_matrix_set_color(bottom_underglow[i], bottom_color.r, bottom_color.g, bottom_color.b);
+    }
+
+    return false;
+}
+
+// Status message
+char      status_message_1[8];
+char      status_message_2[8];
+int32_t   status_message_time     = 0;
+const int status_message_duration = 5000;
+HSV       status_message_color    = {HSV_WHITE};
+
+#define set_status_message(a, ...)                                         \
+    {                                                                      \
+        snprintf(status_message_1, sizeof(status_message_1), a);           \
+        snprintf(status_message_2, sizeof(status_message_2), __VA_ARGS__); \
+        status_message_time = timer_read32();                              \
+    }
+
+rgb_config_t prev_rgb_config;
+
+void set_status_to_rgb_color(void) {
+    status_message_color = rgb_matrix_config.hsv;
+    status_message_color.v += 100;
+}
+
+void check_status_changes(void) {
+    static bool first_update = true;
+    if(first_update) {
+        prev_rgb_config = rgb_matrix_config;
+        first_update = false;
+    }
+    if (memcmp(&prev_rgb_config, &rgb_matrix_config, sizeof(rgb_config_t)) == 0) {
+        return;
+    }
+
+    if (prev_rgb_config.enable != rgb_matrix_config.enable) {
+        if (rgb_matrix_config.enable) {
+            set_status_message("RGB:", "ON");
+            status_message_color = rgb_matrix_config.hsv;
+        } else {
+            set_status_message("RGB:", "OFF");
+            HSV color = {0, 0, 50};
+            status_message_color = color;
+        }
+    } else if (prev_rgb_config.mode != rgb_matrix_config.mode) {
+        set_status_message("Mode:", "%d", rgb_matrix_config.mode);
+        set_status_to_rgb_color();
+    } else if (prev_rgb_config.hsv.h != rgb_matrix_config.hsv.h) {
+        set_status_message("Hue", "%d", rgb_matrix_config.hsv.h);
+        status_message_color = rgb_matrix_config.hsv;
+        set_status_to_rgb_color();
+    } else if (prev_rgb_config.hsv.s != rgb_matrix_config.hsv.s) {
+        set_status_message("Sat", "%d", rgb_matrix_config.hsv.s);
+        set_status_to_rgb_color();
+    } else if (prev_rgb_config.hsv.v != rgb_matrix_config.hsv.v) {
+        set_status_message("Val", "%d", rgb_matrix_config.hsv.v);
+        status_message_color = rgb_matrix_config.hsv;
+    } else if (prev_rgb_config.speed != rgb_matrix_config.speed) {
+        set_status_message("Speed", "%d", rgb_matrix_config.speed);
+        status_message_color = rgb_matrix_config.hsv;
+    }
+    prev_rgb_config = rgb_matrix_config;
 }
