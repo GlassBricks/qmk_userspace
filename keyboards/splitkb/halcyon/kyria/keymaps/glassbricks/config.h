@@ -36,7 +36,7 @@
 #define ONESHOT_TIMEOUT 500
 
 #define TAPPING_TERM 150
-#define PERMISSIVE_HOLD
+// #define PERMISSIVE_HOLD
 #define HOLD_ON_OTHER_KEY_PRESS_PER_KEY
 
 // encoder

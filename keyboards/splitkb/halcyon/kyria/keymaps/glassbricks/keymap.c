@@ -54,9 +54,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_EXT] = LAYOUT_split_3x6_5_hlc(
-		_______,	TO(_YAY),	KC_TAB,		XXXXXXX,	OSM_ALT,	XXXXXXX,									    					KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		XXXXXXX,	_______,
+		_______,	TO(_YAY),	KC_TAB,		XXXXXXX,	OSM_ALT,	XXXXXXX,									    					KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	_______,
 		_______,	OSM_GUI,	OSM_ALT,	OSM_SFT,    OSM_CTL,	CTRL_A,										    					KC_PGDN,	KC_LEFT,	KC_DOWN,	KC_RGHT,	KC_DEL,		_______,
-		MO(_FUN),	CTRL_Z,	    CTRL_X,  	CTRL_C,		KC_TAB,		CTRL_V,     _______,	_______,			_______,	_______,	_______,	KC_BSPC,	KC_APP,		KC_INS,		KC_PSCR,	_______,
+		MO(_FUN),	CTRL_Z,	    CTRL_X,  	CTRL_C,		KC_TAB,		CTRL_V,     _______,	_______,			_______,	_______,	_______,	KC_BSPC,	KC_APP,		_______,	KC_INS,     _______,
                                             _______,	_______,	_______,	_______,	_______,			MO(_NUM),	_______,	_______,	_______,	_______,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
@@ -230,7 +230,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t* record) {
 }
 
 // RGB
-// just color, not brightness
 typedef struct {
     uint8_t h, s;
 } HS;
@@ -257,7 +256,7 @@ enum {
     alt_hue   = mag_red,
     super_hue = lime,
 
-    base_hue = light_blue,
+    base_hue = mint_green,
     sym_hue  = yellow,
     ext_hue  = light_blue,
     num_hue  = purple,
@@ -269,7 +268,7 @@ enum {
 #define _US(hue) {hue, 220, 255}
 
 HSV layer_colors[_MAX + 1] = {
-    [_BASE] = _US(base_hue), [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_ADJ] = _US(adj_hue), [_YAY] = _US(yay_hue),
+    [_BASE] = {base_hue, 80, 200}, [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_ADJ] = _US(adj_hue), [_YAY] = _US(yay_hue),
 };
 
 const uint8_t mod_hues[] = {ctrl_hue, shift_hue, alt_hue, super_hue};
@@ -378,10 +377,10 @@ void check_status_changes(void) {
         set_status_to_rgb_color();
     } else if (prev_rgb_config.hsv.v != rgb_matrix_config.hsv.v) {
         set_status_message("Val", "%d", rgb_matrix_config.hsv.v);
-        status_message_color = rgb_matrix_config.hsv;
+        set_status_to_rgb_color();
     } else if (prev_rgb_config.speed != rgb_matrix_config.speed) {
         set_status_message("Speed", "%d", rgb_matrix_config.speed);
-        status_message_color = rgb_matrix_config.hsv;
+        set_status_to_rgb_color();
     }
     prev_rgb_config = rgb_matrix_config;
 }
