@@ -1,14 +1,21 @@
 // Copyright 2024 splitkb.com (support@splitkb.com)
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "color.h"
+#include "host.h"
+#include "keyboard.h"
+#include "keycode_config.h"
+#include "os_detection.h"
+#include "quantum_keycodes.h"
+#include "report.h"
+
 #include QMK_KEYBOARD_H
-#include <quantum.h>
 
 #include <features/custom_shift_keys.h>
 
 // layout
 
-enum layers { _BASE = 0, _SYM, _EXT, _NUM, _YAY, _FUN, _ADJ, _MAX = _ADJ };
+enum layers { _BASE = 0, _YAY, _QWERTYISH, _SYM, _EXT, _NUM, _YNUM, _FUN, _ADJ, _MAX = _ADJ };
 
 #define OSM_GUI OSM(MOD_LGUI)
 #define OSM_ALT OSM(MOD_LALT)
@@ -16,6 +23,7 @@ enum layers { _BASE = 0, _SYM, _EXT, _NUM, _YAY, _FUN, _ADJ, _MAX = _ADJ };
 #define OSM_CTL OSM(MOD_LCTL)
 
 #define CTRL_A LCTL(KC_A)
+#define CTRL_B LCTL(KC_B)
 #define CTRL_Z LCTL(KC_Z)
 #define CTRL_X LCTL(KC_X)
 #define CTRL_C LCTL(KC_C)
@@ -25,9 +33,14 @@ enum layers { _BASE = 0, _SYM, _EXT, _NUM, _YAY, _FUN, _ADJ, _MAX = _ADJ };
 #define NUM_BLS LT(_NUM, KC_BSLS)
 
 enum custom_keycodes {
-    CANCEL_6 = QK_USER,
-    ALT_TO6,
+    CANCEL_YAY = QK_USER,
+    CANCEL_QWERT,
+    INTO_YAY,
+    INTO_QWERT,
     FUN_NUM,
+    W_BSPC, // normally W, but backspace if ALT pressed
+    TOGGLE_C_SWAP,
+    AP_GLOB, // Apple globe key
 };
 
 // clang-format off
@@ -35,8 +48,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_BASE] = LAYOUT_split_3x6_5_hlc(
 		KC_TAB,		KC_Q,		KC_W,		KC_F,		KC_P,		KC_B,															    KC_J,		KC_L,		KC_U,		KC_Y,		KC_SCLN,	KC_MUTE,
 		KC_ESC,		KC_A,		KC_R,		KC_S,		KC_T,		KC_G,														   		KC_M,		KC_N,		KC_E,		KC_I,		KC_O,		KC_MINS,
-		KC_LCTL,	KC_Z,		KC_X,		KC_C,		KC_D,		KC_V,		KC_SPC, 	QK_REP,			MO(_EXT),	KC_UNDS,	KC_K,		KC_H,		KC_COMM,	KC_DOT,		KC_QUOT,	KC_ENT,
-											KC_LGUI,	XXXXXXX,    KC_LSFT,	MO(_EXT),	NUM_BLS,			    FUN_NUM,	KC_SPC,		MO(_SYM),	KC_LALT,	MO(_ADJ),
+		KC_LCTL,	KC_Z,		KC_X,		KC_C,		KC_D,		KC_V,		KC_SPC, 	QK_REP,			    MO(_EXT),	KC_UNDS,	KC_K,		KC_H,		KC_COMM,	KC_DOT,		KC_QUOT,	KC_ENT,
+											KC_LGUI,	KC_LALT,    KC_LSFT,	MO(_EXT),	NUM_BLS,			FUN_NUM,	KC_SPC,		MO(_SYM),	KC_RALT,	MO(_ADJ),
                                             KC_MUTE,    KC_NO,      KC_NO,      KC_NO,      KC_NO,              KC_MUTE,     KC_NO,     KC_NO,      KC_NO,      KC_NO
 	),
 	[_SYM] = LAYOUT_split_3x6_5_hlc(
@@ -47,15 +60,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
     ),
 	[_NUM] = LAYOUT_split_3x6_5_hlc(
-		_______,	ALT_TO6,	KC_LBRC,	KC_RBRC,	KC_PERC,	KC_AT,																KC_CIRC,	KC_7,		KC_8,		KC_9,		_______,	_______,
+		_______,	INTO_YAY,   KC_LBRC,	KC_RBRC,	KC_PERC,	KC_AT,																KC_CIRC,	KC_7,		KC_8,		KC_9,		_______,	_______,
 		KC_BSPC,	KC_EXLM,	KC_MINS,	KC_PLUS,	KC_EQL,		KC_HASH,															KC_TILD,	KC_4,		KC_5,		KC_6,		KC_0,		_______,
 		_______,	KC_ASTR,	KC_LT,		KC_GT,		KC_SLSH,	KC_BSLS,	_______,	_______,			_______,	_______,    KC_BSPC,    KC_1,		KC_2,		KC_3,		KC_COMM,	_______,
 											_______,	_______,	_______,	SPC_EXT,    _______,			KC_DOT,	    _______,	_______, 	_______,	_______,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_EXT] = LAYOUT_split_3x6_5_hlc(
-		_______,	TO(_YAY),	KC_TAB,		XXXXXXX,	OSM_ALT,	XXXXXXX,									    					KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	_______,
-		_______,	OSM_GUI,	OSM_ALT,	OSM_SFT,    OSM_CTL,	CTRL_A,										    					KC_PGDN,	KC_LEFT,	KC_DOWN,	KC_RGHT,	KC_DEL,		_______,
+		INTO_QWERT,	INTO_YAY,    KC_TAB,	AP_GLOB,	OSM_ALT,	CTRL_B,									    		    			KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	_______,
+		_______,	OSM_GUI,	OSM_ALT,	OSM_SFT,    OSM_CTL,	CTRL_A,										    					KC_PGDN,	KC_LEFT,	KC_DOWN,	KC_RGHT,	KC_DEL,		TOGGLE_C_SWAP,
 		MO(_FUN),	CTRL_Z,	    CTRL_X,  	CTRL_C,		KC_TAB,		CTRL_V,     _______,	_______,			_______,	_______,	_______,	KC_BSPC,	KC_APP,		_______,	KC_INS,     _______,
                                             _______,	_______,	_______,	_______,	_______,			MO(_NUM),	_______,	_______,	_______,	_______,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
@@ -68,19 +81,33 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_ADJ] = LAYOUT_split_3x6_5_hlc(
-		EE_CLR,		RGB_RMOD,	RGB_HUI,	RGB_SAI,	RGB_VAI,	_______,															KC_WH_U,	KC_BTN1,	KC_MS_U,	KC_BTN2,	KC_ACL0,	_______,
+		EE_CLR,		RGB_RMOD,	RGB_HUI,	RGB_SAI,	RGB_VAI,	_______,															KC_WH_U,	KC_BTN1,	KC_MS_U,	KC_BTN2,	KC_ACL0,	QK_BOOT,
 		_______,	RGB_MOD,	RGB_HUD,	RGB_SAD,	RGB_VAD,	RGB_TOG,															KC_WH_D,	KC_MS_L,	KC_MS_D,	KC_MS_R,	KC_ACL1,	_______,
 		_______,	_______,	_______,	RGB_SPD,	RGB_SPI,	_______,	_______,	_______,			_______,	_______,	_______,	KC_BTN4,	KC_BTN3,	KC_BTN5,	KC_ACL2,	_______,
 											_______,	_______,	_______,	_______,	_______,			_______,	_______,	_______,	_______,	_______,
-                                            _______,    _______,    _______,    _______,    _______,             _______,    _______,    _______,    _______,    _______
-	),
-	[_YAY] = LAYOUT_split_3x6_5_hlc(
-		_______,	_______,	_______,	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
-		KC_ESC,		_______,	_______,	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
-		KC_LCTL,	_______,	_______,	_______,	_______,	_______,	KC_MINS,	KC_BSLS,			_______,	_______,	_______,    _______,   	_______,	_______,	_______,	CANCEL_6,
-											TG(_YAY),  	TG(_YAY),	KC_LSFT,	KC_SPC,		KC_LALT,			MO(_FUN),   CANCEL_6,   CANCEL_6,   CANCEL_6,   CANCEL_6,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
+	[_YAY] = LAYOUT_split_3x6_5_hlc(
+		_______,	_______,	W_BSPC, 	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
+		KC_ESC,		_______,	_______,	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
+		KC_LCTL,	_______,	_______,	_______,	_______,	_______,	KC_BSPC,	MO(_YNUM),			MO(_EXT),	_______,	_______,    _______,   	_______,	_______,	_______,	CANCEL_YAY,
+											TG(_YAY),  	TG(_YAY),	KC_LSFT,	KC_SPC,		KC_LALT,			MO(_FUN),   CANCEL_YAY,   CANCEL_YAY,   CANCEL_YAY,   CANCEL_YAY,
+                                            _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
+	),
+	[_YNUM] = LAYOUT_split_3x6_5_hlc(
+		_______,	_______,	KC_9, 	    KC_8,   	KC_7,	    KC_CIRC,															_______,	_______,	_______,	_______,	_______,	_______,
+		_______,	KC_0,   	KC_6,	    KC_5,   	KC_4,	    KC_DOT,															    _______,	_______,	_______,	_______,	_______,	_______,
+		KC_ENTER,	KC_DOT,   	KC_3,   	KC_2,   	KC_1,   	KC_K,	    _______,	_______,		    _______,	_______,    _______,    _______,   	_______,	_______,	_______,	_______,
+											_______,  	_______,	_______,	_______,	_______,			_______,    _______,    _______,    _______,    _______,
+                                            _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
+	),
+    [_QWERTYISH] = LAYOUT_split_3x6_5_hlc(
+        KC_TAB,		KC_Q,		KC_T,		KC_W,		KC_E,		KC_R,															    KC_Y,		KC_U,		KC_I,		KC_O,		KC_P,		KC_MUTE,
+        KC_ESC,		KC_G,		KC_A,		KC_S,		KC_D,		KC_F,														   		KC_H,		KC_J,		KC_K,		KC_L,		KC_SCLN,	KC_MINS,
+        KC_LCTL,	KC_Z,		KC_X,		KC_C,		KC_V,		KC_B,		KC_SPC, 	MO(_YNUM),		    MO(_EXT),	_______,    KC_N,		KC_M,		KC_COMM,	KC_DOT,		KC_QUOT,	KC_ENT,
+                                            TG(_QWERTYISH), TG(_YAY),	KC_LSFT,	KC_SPC,	KC_LALT,        MO(_FUN),   CANCEL_QWERT,   CANCEL_QWERT,   CANCEL_QWERT,   CANCEL_QWERT,
+                                            KC_MUTE,    KC_NO,      KC_NO,      KC_NO,      KC_NO,              KC_MUTE,     KC_NO,     KC_NO,      KC_NO,      KC_NO
+    )
 };
 
 
@@ -132,6 +159,15 @@ bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t* record) {
     }
 }
 
+static bool prev_swap_lctl_lgui = false;
+// init
+bool process_detected_host_os_user(os_variant_t os) {
+    bool is_macos                = os == OS_MACOS || os == OS_IOS;
+    keymap_config.swap_lctl_lgui = is_macos;
+    prev_swap_lctl_lgui          = is_macos;
+    return true;
+}
+
 // custom key handling
 bool in_fake_keypress = false;
 
@@ -153,20 +189,44 @@ bool process_record_user(uint16_t keycode, keyrecord_t* record) {
         return false;
     }
     switch (keycode) {
-        case CANCEL_6: {
-            if (record->event.pressed) layer_off(_YAY);
+        case CANCEL_YAY:
+        case CANCEL_QWERT: {
+            uint8_t layer = keycode == CANCEL_YAY ? _YAY : _QWERTYISH;
+            if (record->event.pressed) layer_off(layer);
             return true;
         }
-        case ALT_TO6: {
+        case INTO_YAY:
+        case INTO_QWERT: {
+            uint8_t layer = keycode == INTO_YAY ? _YAY : _QWERTYISH;
             if (record->event.pressed) {
-                bool alt_pressed = matrix_is_on(3, 0);
-                if (alt_pressed) fake_keypress(3, 0, false);
-                layer_move(_YAY);
-                if (alt_pressed) fake_keypress(3, 0, true);
+                layer_on(layer);
+                // repress all left thumb keys
+                uint8_t row        = 3;
+                uint8_t currentRow = matrix_get_row(row);
+                for (uint8_t col = 0; col < matrix_cols(); col++) {
+                    if ((currentRow & (1 << col)) != 0) fake_keypress(row, col, false);
+                }
+                for (uint8_t col = 0; col < matrix_cols(); col++) {
+                    if ((currentRow & (1 << col)) != 0) fake_keypress(row, col, true);
+                }
             }
-            return false;
+            return true;
+        }
+        case W_BSPC: {
+            static uint16_t registered_keycode = KC_NO;
+            if (registered_keycode != KC_NO) {
+                unregister_code16(registered_keycode);
+                registered_keycode = KC_NO;
+            }
+            if (record->event.pressed) {
+                registered_keycode = get_mods() & MOD_MASK_ALT ? KC_BSPC : KC_W;
+                register_code16(registered_keycode);
+                return false;
+            }
+            return true;
         }
         case FUN_NUM: {
+            // Fun; if shift, move to num
             static uint8_t mo_layer = 0;
             if (record->event.pressed) {
                 if (get_mods() & MOD_MASK_SHIFT) {
@@ -180,6 +240,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t* record) {
             }
             return false;
         }
+        case TOGGLE_C_SWAP:
+            if (record->event.pressed) {
+                keymap_config.swap_lctl_lgui = !keymap_config.swap_lctl_lgui;
+            }
+            return false;
+        case AP_GLOB:
+            if (detected_host_os() == OS_IOS || detected_host_os() == OS_MACOS) {
+                host_consumer_send(record->event.pressed ? AC_NEXT_KEYBOARD_LAYOUT_SELECT : 0);
+            }
+            return false;
         default:
             break;
     }
@@ -256,19 +326,23 @@ enum {
     alt_hue   = mag_red,
     super_hue = lime,
 
-    base_hue = mint_green,
-    sym_hue  = yellow,
-    ext_hue  = light_blue,
-    num_hue  = purple,
-    yay_hue  = orange,
-    fun_hue  = dark_blue,
-    adj_hue  = magenta,
+    base_hue  = mint_green,
+    sym_hue   = yellow,
+    ext_hue   = light_blue,
+    num_hue   = purple,
+    yay_hue   = orange,
+    qwert_hue = orange,
+    fun_hue   = dark_blue,
+    adj_hue   = magenta,
 };
 
 #define _US(hue) {hue, 220, 255}
 
-HSV layer_colors[_MAX + 1] = {
-    [_BASE] = {base_hue, 80, 200}, [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_ADJ] = _US(adj_hue), [_YAY] = _US(yay_hue),
+const uint8_t num_layers = _MAX + 1;
+
+const char* const layer_names[_MAX + 1]  = {[_BASE] = "Base", [_SYM] = "Sym", [_NUM] = "Num", [_EXT] = "Ext", [_FUN] = "Fun", [_ADJ] = "Adj", [_YAY] = "Yay", [_QWERTYISH] = "QWRT", [_YNUM] = "YNum"};
+HSV               layer_colors[_MAX + 1] = {
+    [_BASE] = {base_hue, 80, 200}, [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_YAY] = _US(yay_hue), [_QWERTYISH] = _US(qwert_hue), [_YNUM] = _US(num_hue), [_ADJ] = _US(adj_hue),
 };
 
 const uint8_t mod_hues[] = {ctrl_hue, shift_hue, alt_hue, super_hue};
@@ -348,39 +422,46 @@ void set_status_to_rgb_color(void) {
 
 void check_status_changes(void) {
     static bool first_update = true;
-    if(first_update) {
-        prev_rgb_config = rgb_matrix_config;
-        first_update = false;
-    }
-    if (memcmp(&prev_rgb_config, &rgb_matrix_config, sizeof(rgb_config_t)) == 0) {
-        return;
+
+    bool current_swap_lctl_lgui = keymap_config.swap_lctl_lgui;
+
+    if (first_update) {
+        prev_rgb_config     = rgb_matrix_config;
+        prev_swap_lctl_lgui = keymap_config.swap_lctl_lgui;
+        first_update        = false;
     }
 
-    if (prev_rgb_config.enable != rgb_matrix_config.enable) {
-        if (rgb_matrix_config.enable) {
-            set_status_message("RGB:", "ON");
+    if (current_swap_lctl_lgui != prev_swap_lctl_lgui) {
+        set_status_message("C Swap:", current_swap_lctl_lgui ? "Yes" : "No");
+        status_message_color = (HSV){current_swap_lctl_lgui ? 135 : 210, 200, 200};
+    } else if (memcmp(&prev_rgb_config, &rgb_matrix_config, sizeof(rgb_config_t)) != 0) {
+        if (prev_rgb_config.enable != rgb_matrix_config.enable) {
+            if (rgb_matrix_config.enable) {
+                set_status_message("RGB:", "ON");
+                status_message_color = rgb_matrix_config.hsv;
+            } else {
+                set_status_message("RGB:", "OFF");
+                HSV color            = {0, 0, 50};
+                status_message_color = color;
+            }
+        } else if (prev_rgb_config.mode != rgb_matrix_config.mode) {
+            set_status_message("Mode:", "%d", rgb_matrix_config.mode);
+            set_status_to_rgb_color();
+        } else if (prev_rgb_config.hsv.h != rgb_matrix_config.hsv.h) {
+            set_status_message("Hue", "%d", rgb_matrix_config.hsv.h);
             status_message_color = rgb_matrix_config.hsv;
-        } else {
-            set_status_message("RGB:", "OFF");
-            HSV color = {0, 0, 50};
-            status_message_color = color;
+            set_status_to_rgb_color();
+        } else if (prev_rgb_config.hsv.s != rgb_matrix_config.hsv.s) {
+            set_status_message("Sat", "%d", rgb_matrix_config.hsv.s);
+            set_status_to_rgb_color();
+        } else if (prev_rgb_config.hsv.v != rgb_matrix_config.hsv.v) {
+            set_status_message("Val", "%d", rgb_matrix_config.hsv.v);
+            set_status_to_rgb_color();
+        } else if (prev_rgb_config.speed != rgb_matrix_config.speed) {
+            set_status_message("Speed", "%d", rgb_matrix_config.speed);
+            set_status_to_rgb_color();
         }
-    } else if (prev_rgb_config.mode != rgb_matrix_config.mode) {
-        set_status_message("Mode:", "%d", rgb_matrix_config.mode);
-        set_status_to_rgb_color();
-    } else if (prev_rgb_config.hsv.h != rgb_matrix_config.hsv.h) {
-        set_status_message("Hue", "%d", rgb_matrix_config.hsv.h);
-        status_message_color = rgb_matrix_config.hsv;
-        set_status_to_rgb_color();
-    } else if (prev_rgb_config.hsv.s != rgb_matrix_config.hsv.s) {
-        set_status_message("Sat", "%d", rgb_matrix_config.hsv.s);
-        set_status_to_rgb_color();
-    } else if (prev_rgb_config.hsv.v != rgb_matrix_config.hsv.v) {
-        set_status_message("Val", "%d", rgb_matrix_config.hsv.v);
-        set_status_to_rgb_color();
-    } else if (prev_rgb_config.speed != rgb_matrix_config.speed) {
-        set_status_message("Speed", "%d", rgb_matrix_config.speed);
-        set_status_to_rgb_color();
     }
-    prev_rgb_config = rgb_matrix_config;
+    prev_swap_lctl_lgui = current_swap_lctl_lgui;
+    prev_rgb_config     = rgb_matrix_config;
 }

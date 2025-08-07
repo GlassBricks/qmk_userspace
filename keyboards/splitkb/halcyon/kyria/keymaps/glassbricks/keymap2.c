@@ -24,7 +24,7 @@
 
 // layout
 
-enum layers { _BASE = 0, _SYM, _EXT, _NUM, _YAY, _FUN, _ADJ, _MAX = _ADJ };
+enum layers { _BASE = 0, _SYM, _EXT, _NUM, _YAY, _YNUM, _FUN, _ADJ, _MAX = _ADJ };
 
 #define OSM_GUI OSM(MOD_LGUI)
 #define OSM_ALT OSM(MOD_LALT)
@@ -205,10 +205,13 @@ bool oled_task_user(void) {
                 oled_write_P(PSTR("Fun\n"), false);
                 break;
             case _ADJ:
-                oled_write_P(PSTR("ADJ\n"), false);
+                oled_write_P(PSTR("Adb\n"), false);
                 break;
             case _YAY:
                 oled_write_P(PSTR("Yay\n"), false);
+                break;
+            case _YNUM:
+                oled_write_P(PSTR("YNum\n"), false);
                 break;
             default:
                 oled_write_P(PSTR("???\n"), false);

@@ -1,6 +1,7 @@
 // Copyright 2024 splitkb.com (support@splitkb.com)
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "keycode_config.h"
 #include "quantum.h"
 #include "halcyon.h"
 #include "hlc_tft_display.h"
@@ -11,6 +12,7 @@
 #include "graphics/fonts/Retron2000-27.qff.h"
 #include "graphics/fonts/Retron2000-underline-27.qff.h"
 
+#include <stdint.h>
 
 static painter_font_handle_t Retron27;
 static painter_font_handle_t Retron27_underline;
@@ -35,17 +37,9 @@ layer_state_t last_layer_state = {0};
 // Define the probability factor for initial alive cells
 #define INITIAL_ALIVE_PROBABILITY 0.2  // 20% chance of being alive
 
-const char* layer_names[7] = {
-    "Base",
-    "Sym",
-    "Ext",
-    "Num",
-    "Game",
-    "Fun",
-    "Adj"
-};
-
-extern HSV layer_colors[7];
+extern const char* const layer_names[8+1];
+extern HSV layer_colors[8+1];
+extern const uint8_t num_layers;
 
 extern char      status_message_1[8];
 extern char      status_message_2[8];
@@ -86,7 +80,7 @@ void update_display(void) {
     if(last_layer_state != layer_state || first_run_layer == false) {
         uint8_t layer = get_highest_layer(layer_state|default_layer_state);
         qp_rect(lcd_surface, 5, 5, 135, 5 + Retron27->line_height, HSV_BLACK, true);
-        if (layer <= 6) {
+        if (layer < num_layers) {
             HSV color = layer_colors[layer];
             qp_drawtext_recolor(lcd_surface, 5, 5, Retron27_underline, layer_names[layer],
                                 color.h, color.s, color.v, HSV_BLACK);
@@ -103,7 +97,8 @@ void update_display(void) {
         static const uint8_t modBits[4] = {MOD_BIT(KC_LGUI), MOD_BIT(KC_LALT), MOD_BIT(KC_LSFT), MOD_BIT(KC_LCTL)};
         static const HSV modColors[4] = {{HSV_GREEN}, {HSV_MAGENTA}, {HSV_YELLOW}, {HSV_CYAN}};
         static const HSV modInactive = {0, 0, 20};
-        static const char modChars[4] = "MASC";
+        bool ctrl_swapped = keymap_config.swap_lctl_lgui;
+        char* modChars = !ctrl_swapped ? "MASC" : "CASM";
         static const uint8_t text_width = 20;
         for(uint8_t i = 0; i < 4; i++) {
             HSV color = (mod_keys & modBits[i]) ? modColors[i] : modInactive;
