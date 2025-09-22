@@ -159,15 +159,6 @@ bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t* record) {
     }
 }
 
-static bool prev_swap_lctl_lgui = false;
-// init
-bool process_detected_host_os_user(os_variant_t os) {
-    bool is_macos                = os == OS_MACOS || os == OS_IOS;
-    keymap_config.swap_lctl_lgui = is_macos;
-    prev_swap_lctl_lgui          = is_macos;
-    return true;
-}
-
 // custom key handling
 bool in_fake_keypress = false;
 
@@ -423,18 +414,12 @@ void set_status_to_rgb_color(void) {
 void check_status_changes(void) {
     static bool first_update = true;
 
-    bool current_swap_lctl_lgui = keymap_config.swap_lctl_lgui;
-
     if (first_update) {
-        prev_rgb_config     = rgb_matrix_config;
-        prev_swap_lctl_lgui = keymap_config.swap_lctl_lgui;
-        first_update        = false;
+        prev_rgb_config = rgb_matrix_config;
+        first_update    = false;
     }
 
-    if (current_swap_lctl_lgui != prev_swap_lctl_lgui) {
-        set_status_message("C Swap:", current_swap_lctl_lgui ? "Yes" : "No");
-        status_message_color = (HSV){current_swap_lctl_lgui ? 135 : 210, 200, 200};
-    } else if (memcmp(&prev_rgb_config, &rgb_matrix_config, sizeof(rgb_config_t)) != 0) {
+    if (memcmp(&prev_rgb_config, &rgb_matrix_config, sizeof(rgb_config_t)) != 0) {
         if (prev_rgb_config.enable != rgb_matrix_config.enable) {
             if (rgb_matrix_config.enable) {
                 set_status_message("RGB:", "ON");
@@ -462,6 +447,5 @@ void check_status_changes(void) {
             set_status_to_rgb_color();
         }
     }
-    prev_swap_lctl_lgui = current_swap_lctl_lgui;
-    prev_rgb_config     = rgb_matrix_config;
+    prev_rgb_config = rgb_matrix_config;
 }
