@@ -15,7 +15,7 @@
 
 // layout
 
-enum layers { _BASE = 0, _YAY, _QWERTYISH, _SYM, _EXT, _NUM, _YNUM, _FUN, _ADJ, _MAX = _ADJ };
+enum layers { _BASE = 0, _YAY, _SYM, _EXT, _NUM, _FUN, _ADJ, _MAX = _ADJ };
 
 #define OSM_GUI OSM(MOD_LGUI)
 #define OSM_ALT OSM(MOD_LALT)
@@ -34,12 +34,11 @@ enum layers { _BASE = 0, _YAY, _QWERTYISH, _SYM, _EXT, _NUM, _YNUM, _FUN, _ADJ, 
 
 enum custom_keycodes {
     CANCEL_YAY = QK_USER,
-    CANCEL_QWERT,
     INTO_YAY,
-    INTO_QWERT,
     FUN_NUM,
     W_BSPC, // normally W, but backspace if ALT pressed
-    TOGGLE_C_SWAP,
+    C_SWAP_ON,
+    C_SWAP_OFF,
     AP_GLOB, // Apple globe key
 };
 
@@ -67,8 +66,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_EXT] = LAYOUT_split_3x6_5_hlc(
-		INTO_QWERT,	INTO_YAY,    KC_TAB,	AP_GLOB,	OSM_ALT,	CTRL_B,									    		    			KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	_______,
-		_______,	OSM_GUI,	OSM_ALT,	OSM_SFT,    OSM_CTL,	CTRL_A,										    					KC_PGDN,	KC_LEFT,	KC_DOWN,	KC_RGHT,	KC_DEL,		TOGGLE_C_SWAP,
+		_______,	INTO_YAY,    KC_TAB,	AP_GLOB,	OSM_ALT,	CTRL_B,									    		    			KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	C_SWAP_ON,
+		_______,	OSM_GUI,	OSM_ALT,	OSM_SFT,    OSM_CTL,	CTRL_A,										    					KC_PGDN,	KC_LEFT,	KC_DOWN,	KC_RGHT,	KC_DEL,		C_SWAP_OFF,
 		MO(_FUN),	CTRL_Z,	    CTRL_X,  	CTRL_C,		KC_TAB,		CTRL_V,     _______,	_______,			_______,	_______,	_______,	KC_BSPC,	KC_APP,		_______,	KC_INS,     _______,
                                             _______,	_______,	_______,	_______,	_______,			MO(_NUM),	_______,	_______,	_______,	_______,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
@@ -90,24 +89,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_YAY] = LAYOUT_split_3x6_5_hlc(
 		_______,	_______,	W_BSPC, 	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
 		KC_ESC,		_______,	_______,	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
-		KC_LCTL,	_______,	_______,	_______,	_______,	_______,	KC_BSPC,	MO(_YNUM),			MO(_EXT),	_______,	_______,    _______,   	_______,	_______,	_______,	CANCEL_YAY,
+		KC_LCTL,	_______,	_______,	_______,	_______,	_______,	KC_BSPC,	_______,			MO(_EXT),	_______,	_______,    _______,   	_______,	_______,	_______,	CANCEL_YAY,
 											TG(_YAY),  	TG(_YAY),	KC_LSFT,	KC_SPC,		KC_LALT,			MO(_FUN),   CANCEL_YAY,   CANCEL_YAY,   CANCEL_YAY,   CANCEL_YAY,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
-	),
-	[_YNUM] = LAYOUT_split_3x6_5_hlc(
-		_______,	_______,	KC_9, 	    KC_8,   	KC_7,	    KC_CIRC,															_______,	_______,	_______,	_______,	_______,	_______,
-		_______,	KC_0,   	KC_6,	    KC_5,   	KC_4,	    KC_DOT,															    _______,	_______,	_______,	_______,	_______,	_______,
-		KC_ENTER,	KC_DOT,   	KC_3,   	KC_2,   	KC_1,   	KC_K,	    _______,	_______,		    _______,	_______,    _______,    _______,   	_______,	_______,	_______,	_______,
-											_______,  	_______,	_______,	_______,	_______,			_______,    _______,    _______,    _______,    _______,
-                                            _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
-	),
-    [_QWERTYISH] = LAYOUT_split_3x6_5_hlc(
-        KC_TAB,		KC_Q,		KC_T,		KC_W,		KC_E,		KC_R,															    KC_Y,		KC_U,		KC_I,		KC_O,		KC_P,		KC_MUTE,
-        KC_ESC,		KC_G,		KC_A,		KC_S,		KC_D,		KC_F,														   		KC_H,		KC_J,		KC_K,		KC_L,		KC_SCLN,	KC_MINS,
-        KC_LCTL,	KC_Z,		KC_X,		KC_C,		KC_V,		KC_B,		KC_SPC, 	MO(_YNUM),		    MO(_EXT),	_______,    KC_N,		KC_M,		KC_COMM,	KC_DOT,		KC_QUOT,	KC_ENT,
-                                            TG(_QWERTYISH), TG(_YAY),	KC_LSFT,	KC_SPC,	KC_LALT,        MO(_FUN),   CANCEL_QWERT,   CANCEL_QWERT,   CANCEL_QWERT,   CANCEL_QWERT,
-                                            KC_MUTE,    KC_NO,      KC_NO,      KC_NO,      KC_NO,              KC_MUTE,     KC_NO,     KC_NO,      KC_NO,      KC_NO
-    )
+	)
 };
 
 
@@ -150,7 +135,7 @@ bool encoder_update_user(uint8_t index, bool clockwise) {
 #endif
 
 // key configure stuff
-bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t* record) {
+bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case NUM_BLS:
             return true;
@@ -175,22 +160,18 @@ void fake_keypress(uint8_t row, uint8_t col, bool pressed) {
     in_fake_keypress = false;
 }
 
-bool process_record_user(uint16_t keycode, keyrecord_t* record) {
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (!process_custom_shift_keys(keycode, record)) {
         return false;
     }
     switch (keycode) {
-        case CANCEL_YAY:
-        case CANCEL_QWERT: {
-            uint8_t layer = keycode == CANCEL_YAY ? _YAY : _QWERTYISH;
-            if (record->event.pressed) layer_off(layer);
+        case CANCEL_YAY: {
+            if (record->event.pressed) layer_off(_YAY);
             return true;
         }
-        case INTO_YAY:
-        case INTO_QWERT: {
-            uint8_t layer = keycode == INTO_YAY ? _YAY : _QWERTYISH;
+        case INTO_YAY: {
             if (record->event.pressed) {
-                layer_on(layer);
+                layer_on(_YAY);
                 // repress all left thumb keys
                 uint8_t row        = 3;
                 uint8_t currentRow = matrix_get_row(row);
@@ -231,10 +212,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t* record) {
             }
             return false;
         }
-        case TOGGLE_C_SWAP:
-            if (record->event.pressed) {
-                keymap_config.swap_lctl_lgui = !keymap_config.swap_lctl_lgui;
-            }
+        case C_SWAP_ON:
+            keymap_config.swap_lctl_lgui = true;
+            return false;
+        case C_SWAP_OFF:
+            keymap_config.swap_lctl_lgui = false;
             return false;
         case AP_GLOB:
             if (detected_host_os() == OS_IOS || detected_host_os() == OS_MACOS) {
@@ -317,23 +299,22 @@ enum {
     alt_hue   = mag_red,
     super_hue = lime,
 
-    base_hue  = mint_green,
-    sym_hue   = yellow,
-    ext_hue   = light_blue,
-    num_hue   = purple,
-    yay_hue   = orange,
-    qwert_hue = orange,
-    fun_hue   = dark_blue,
-    adj_hue   = magenta,
+    base_hue = mint_green,
+    sym_hue  = yellow,
+    ext_hue  = light_blue,
+    num_hue  = purple,
+    yay_hue  = orange,
+    fun_hue  = dark_blue,
+    adj_hue  = magenta,
 };
 
 #define _US(hue) {hue, 220, 255}
 
 const uint8_t num_layers = _MAX + 1;
 
-const char* const layer_names[_MAX + 1]  = {[_BASE] = "Base", [_SYM] = "Sym", [_NUM] = "Num", [_EXT] = "Ext", [_FUN] = "Fun", [_ADJ] = "Adj", [_YAY] = "Yay", [_QWERTYISH] = "QWRT", [_YNUM] = "YNum"};
+const char *const layer_names[_MAX + 1]  = {[_BASE] = "Base", [_SYM] = "Sym", [_NUM] = "Num", [_EXT] = "Ext", [_FUN] = "Fun", [_ADJ] = "Adj", [_YAY] = "Yay"};
 HSV               layer_colors[_MAX + 1] = {
-    [_BASE] = {base_hue, 80, 200}, [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_YAY] = _US(yay_hue), [_QWERTYISH] = _US(qwert_hue), [_YNUM] = _US(num_hue), [_ADJ] = _US(adj_hue),
+    [_BASE] = {base_hue, 80, 200}, [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_YAY] = _US(yay_hue), [_ADJ] = _US(adj_hue),
 };
 
 const uint8_t mod_hues[] = {ctrl_hue, shift_hue, alt_hue, super_hue};
