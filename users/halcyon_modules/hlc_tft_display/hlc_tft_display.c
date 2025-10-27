@@ -31,16 +31,8 @@ painter_device_t lcd_surface;
 
 led_t last_led_usb_state = {0};
 
-#define GRID_WIDTH 27
-#define GRID_HEIGHT 48
-#define CELL_SIZE 4 // Cell size excluding outline
-#define OUTLINE_SIZE 1
-
-// Define the probability factor for initial alive cells
-#define INITIAL_ALIVE_PROBABILITY 0.2 // 20% chance of being alive
-
-extern const char *const layer_names[8 + 1];
-extern HSV               layer_colors[8 + 1];
+extern const char *const layer_names[6 + 1];
+extern HSV               layer_colors[6 + 1];
 extern const uint8_t     num_layers;
 
 extern char      status_message_1[8];
@@ -61,6 +53,10 @@ void caps_word_set_user(bool active) {
     caps_word_changed = true;
     caps_word_state   = active;
 }
+
+
+extern bool sentence_case_changed;
+extern bool is_sentence_case_primed(void);
 
 void update_display(void) {
     static bool first_run = false;
@@ -141,18 +137,21 @@ void update_display(void) {
         }
     }
 
-    if (caps_word_changed) {
-        if (!caps_word_state) {
-            qp_rect(lcd_surface, 5, get_line_height(2), 135, get_line_height(2) + Retron27->line_height, HSV_BLACK, true);
+    if (caps_word_changed || sentence_case_changed) {
+        if (caps_word_state) {
+            qp_drawtext_recolor(lcd_surface, 5, get_line_height(2), Retron27, "C Word", HSV_TURQUOISE, HSV_BLACK);
+        } else if (is_sentence_case_primed()) {
+            qp_drawtext_recolor(lcd_surface, 5, get_line_height(2), Retron27, "...A", HSV_TURQUOISE, HSV_BLACK);
         } else {
-            qp_drawtext_recolor(lcd_surface, 5, get_line_height(2), Retron27, caps_word_state ? "Caps Word" : "Caps Word Off", caps_word_state ? HSV_TURQUOISE : HSV_RED, HSV_BLACK);
+            qp_rect(lcd_surface, 5, get_line_height(2), 135, get_line_height(2) + Retron27->line_height, HSV_BLACK, true);
         }
-        caps_word_changed = false;
+        sentence_case_changed = false;
+        caps_word_changed     = false;
     }
 
     if (ctrl_gui_swap_changed) {
         if (ctrl_gui_swap) {
-            qp_drawtext_recolor(lcd_surface, 5, get_line_height(3), Retron27, "C Word", HSV_TURQUOISE, HSV_BLACK);
+            qp_drawtext_recolor(lcd_surface, 5, get_line_height(3), Retron27, "Cm Swap", HSV_TURQUOISE, HSV_BLACK);
         } else {
             qp_rect(lcd_surface, 5, get_line_height(3), 135, get_line_height(3) + Retron27->line_height, HSV_BLACK, true);
         }

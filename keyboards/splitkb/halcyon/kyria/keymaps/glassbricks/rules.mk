@@ -11,7 +11,6 @@ NKRO_ENABLE = yes
 
 # Misc features
 
-OS_DETECTION_ENABLE = yes
 KEYBOARD_SHARED_EP = yes
 
 # Keymap features
@@ -19,10 +18,10 @@ KEYBOARD_SHARED_EP = yes
 CAPS_WORD_ENABLE = yes
 REPEAT_KEY_ENABLE = yes
 
+MOUSEKEY_ENABLE=yes
+
 COMBO_ENABLE = no
 COMMAND_ENABLE = no
 SPACE_CADET_ENABLE = no
 GRAVE_ESC_ENABLE = no
 MAGIC_KEY_ENABLE = no
-
-SRC += features/custom_shift_keys.c

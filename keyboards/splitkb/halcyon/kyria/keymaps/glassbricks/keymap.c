@@ -2,20 +2,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "color.h"
-#include "host.h"
 #include "keyboard.h"
 #include "keycode_config.h"
-#include "os_detection.h"
+#include "keycodes.h"
 #include "quantum_keycodes.h"
-#include "report.h"
 
 #include QMK_KEYBOARD_H
 
-#include <features/custom_shift_keys.h>
-
 // layout
 
-enum layers { _BASE = 0, _YAY, _SYM, _EXT, _NUM, _FUN, _ADJ, _MAX = _ADJ };
+enum layers { _BASE = 0, _GAME, _NUM, _SYM, _EXT, _FUN, _ADJ, _MAX = _ADJ };
 
 #define OSM_GUI OSM(MOD_LGUI)
 #define OSM_ALT OSM(MOD_LALT)
@@ -33,13 +29,12 @@ enum layers { _BASE = 0, _YAY, _SYM, _EXT, _NUM, _FUN, _ADJ, _MAX = _ADJ };
 #define NUM_BLS LT(_NUM, KC_BSLS)
 
 enum custom_keycodes {
-    CANCEL_YAY = QK_USER,
+    UN_YAY = QK_USER,
     INTO_YAY,
     FUN_NUM,
     W_BSPC, // normally W, but backspace if ALT pressed
-    C_SWAP_ON,
-    C_SWAP_OFF,
-    AP_GLOB, // Apple globe key
+    CSWP_ON,
+    CSWP_OFF,
 };
 
 // clang-format off
@@ -47,57 +42,57 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_BASE] = LAYOUT_split_3x6_5_hlc(
 		KC_TAB,		KC_Q,		KC_W,		KC_F,		KC_P,		KC_B,															    KC_J,		KC_L,		KC_U,		KC_Y,		KC_SCLN,	KC_MUTE,
 		KC_ESC,		KC_A,		KC_R,		KC_S,		KC_T,		KC_G,														   		KC_M,		KC_N,		KC_E,		KC_I,		KC_O,		KC_MINS,
-		KC_LCTL,	KC_Z,		KC_X,		KC_C,		KC_D,		KC_V,		KC_SPC, 	QK_REP,			    MO(_EXT),	KC_UNDS,	KC_K,		KC_H,		KC_COMM,	KC_DOT,		KC_QUOT,	KC_ENT,
+		KC_LCTL,	KC_Z,		KC_X,	    KC_C,	    KC_D,       KC_V,		KC_SPC, 	QK_REP,			    MO(_EXT),	KC_UNDS,	KC_K,		KC_H,		KC_COMM,	KC_DOT,		KC_QUOT,	KC_ENT,
 											KC_LGUI,	KC_LALT,    KC_LSFT,	MO(_EXT),	NUM_BLS,			FUN_NUM,	KC_SPC,		MO(_SYM),	KC_RALT,	MO(_ADJ),
-                                            KC_MUTE,    KC_NO,      KC_NO,      KC_NO,      KC_NO,              KC_MUTE,     KC_NO,     KC_NO,      KC_NO,      KC_NO
+                                            KC_MUTE,    KC_NO,      KC_NO,      KC_NO,      KC_NO,              KC_MUTE,    KC_NO,      KC_NO,      KC_NO,      KC_NO
 	),
 	[_SYM] = LAYOUT_split_3x6_5_hlc(
-        _______,	KC_SCRL,	KC_LBRC,	KC_RBRC,	KC_PERC,	KC_AT,																KC_CIRC,	KC_PIPE,	KC_QUES,    KC_AMPR,	KC_SCLN,	_______,
-        KC_BSPC,	KC_EXLM,	KC_MINS,	KC_PLUS,	KC_EQL,		KC_HASH,														    KC_TILD,	KC_COLN,	KC_LPRN,	KC_RPRN,	KC_RCBR,	_______,
-        MO(_NUM),	KC_ASTR,	KC_LT,		KC_GT,		KC_SLSH,	KC_BSLS,	KC_UNDS,	_______,			_______,	_______,	KC_GRV,		KC_LCBR,	KC_DLR,		KC_DOT,		KC_DQUO,	_______,
-                                            _______,	_______,	_______,	SPC_EXT,    _______,			_______,	_______,	_______,	_______,	_______,
-                                            _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
-    ),
+		_______,	KC_GRV, 	KC_LT,	    KC_GT,	    KC_MINS,	KC_AT,																KC_PIPE,	KC_PERC,	KC_QUES,    KC_AMPR,	KC_SCLN,	_______,
+		KC_BSPC,	KC_EXLM,	KC_ASTR,	KC_SLSH,	KC_EQL,		KC_HASH,														    KC_TILD,	KC_COLN,	KC_LPRN,	KC_RPRN,	KC_RCBR,	_______,
+		MO(_NUM),	KC_BSLS,	KC_PLUS,	KC_LBRC,	KC_RBRC,	KC_CIRC,	KC_UNDS,	_______,			_______,	_______,	KC_DLR,		KC_LCBR,	KC_COMM,	KC_DOT,		KC_DQUO,	_______,
+    										_______,	_______,	_______,	SPC_EXT,    _______,			_______,	_______,	_______,	_______,	_______,
+    										_______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
+				),
 	[_NUM] = LAYOUT_split_3x6_5_hlc(
-		_______,	INTO_YAY,   KC_LBRC,	KC_RBRC,	KC_PERC,	KC_AT,																KC_CIRC,	KC_7,		KC_8,		KC_9,		_______,	_______,
-		KC_BSPC,	KC_EXLM,	KC_MINS,	KC_PLUS,	KC_EQL,		KC_HASH,															KC_TILD,	KC_4,		KC_5,		KC_6,		KC_0,		_______,
-		_______,	KC_ASTR,	KC_LT,		KC_GT,		KC_SLSH,	KC_BSLS,	_______,	_______,			_______,	_______,    KC_BSPC,    KC_1,		KC_2,		KC_3,		KC_COMM,	_______,
-											_______,	_______,	_______,	SPC_EXT,    _______,			KC_DOT,	    _______,	_______, 	_______,	_______,
-                                            _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
+    	INTO_YAY,	KC_GRV, 	KC_LT,	    KC_GT,	    KC_MINS,	KC_AT,																KC_PIPE,	KC_4,		KC_5,		KC_6,		_______,	_______,
+    	KC_BSPC,	KC_EXLM,	KC_ASTR,	KC_SLSH,	KC_EQL,		KC_HASH,															KC_TILD,	KC_1,		KC_2,		KC_3,		KC_0,		_______,
+    	_______,	KC_BSLS,	KC_PLUS,	KC_LBRC,	KC_RBRC,	KC_CIRC,	_______,	_______,			KC_COMM,	_______,    KC_DLR,     KC_7,		KC_8,		KC_9,		KC_COMM,	_______,
+    										_______,	_______,	_______,	SPC_EXT,    _______,			KC_DOT,	    _______,	_______, 	_______,	_______,
+											_______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_EXT] = LAYOUT_split_3x6_5_hlc(
-		_______,	INTO_YAY,    KC_TAB,	AP_GLOB,	OSM_ALT,	CTRL_B,									    		    			KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	C_SWAP_ON,
-		_______,	OSM_GUI,	OSM_ALT,	OSM_SFT,    OSM_CTL,	CTRL_A,										    					KC_PGDN,	KC_LEFT,	KC_DOWN,	KC_RGHT,	KC_DEL,		C_SWAP_OFF,
+		CSWP_ON,	INTO_YAY,   KC_TAB,	    CSWP_OFF,	OSM_ALT,	CTRL_B,									    		    			KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	_______,
+		_______,	OSM_GUI,	OSM_ALT,	OSM_SFT,    OSM_CTL,	CTRL_A,										    					KC_PGDN,	KC_LEFT,	KC_DOWN,	KC_RGHT,	KC_DEL,		CSWP_OFF,
 		MO(_FUN),	CTRL_Z,	    CTRL_X,  	CTRL_C,		KC_TAB,		CTRL_V,     _______,	_______,			_______,	_______,	_______,	KC_BSPC,	KC_APP,		_______,	KC_INS,     _______,
-                                            _______,	_______,	_______,	_______,	_______,			MO(_NUM),	_______,	_______,	_______,	_______,
+                                            _______,	_______,	_______,	_______,	_______,			_______,	_______,	_______,	_______,	_______,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_FUN] = LAYOUT_split_3x6_5_hlc(
-		_______,	_______,	KC_MPRV,	KC_MPLY,	KC_MNXT,	KC_VOLU,											                _______,	KC_F7,		KC_F8,		KC_F9,		_______,	_______,
-		_______,	OSM_GUI,    OSM_ALT,    OSM_SFT,    OSM_CTL,	KC_VOLD,												            KC_F11,	    KC_F4,		KC_F5,		KC_F6,		KC_F10,		_______,
-		_______,	_______,	_______,	_______,	_______,	KC_MUTE,	_______,	_______,			_______,	_______,	KC_F12,	    KC_F1,		KC_F2,		KC_F3,		_______,	_______,
+		_______,	_______,	KC_MPRV,	KC_MPLY,	KC_MNXT,	KC_VOLU,											                _______,	KC_F4,		KC_F5,		KC_F6,		_______,	_______,
+		_______,	OSM_GUI,    OSM_ALT,    OSM_SFT,    OSM_CTL,	KC_VOLD,												            KC_F11,	    KC_F1,		KC_F2,		KC_F3,		KC_F10,		_______,
+		_______,	_______,	_______,	_______,	_______,	KC_MUTE,	_______,	_______,			_______,	_______,	_______,	    KC_F7,		KC_F8,		KC_F9,		KC_F12,	_______,
 											_______,	_______,	_______,	_______,	_______,			_______,	_______,	_______,	_______,	_______,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_ADJ] = LAYOUT_split_3x6_5_hlc(
-		EE_CLR,		RGB_RMOD,	RGB_HUI,	RGB_SAI,	RGB_VAI,	_______,															KC_WH_U,	KC_BTN1,	KC_MS_U,	KC_BTN2,	KC_ACL0,	QK_BOOT,
-		_______,	RGB_MOD,	RGB_HUD,	RGB_SAD,	RGB_VAD,	RGB_TOG,															KC_WH_D,	KC_MS_L,	KC_MS_D,	KC_MS_R,	KC_ACL1,	_______,
-		_______,	_______,	_______,	RGB_SPD,	RGB_SPI,	_______,	_______,	_______,			_______,	_______,	_______,	KC_BTN4,	KC_BTN3,	KC_BTN5,	KC_ACL2,	_______,
+		EE_CLR,		UG_SPDU,	UG_HUEU,	UG_SATU,	UG_VALU,	_______,															MS_WHLU,	MS_BTN1,	MS_UP,	    MS_BTN2,	MS_ACL0,	QK_BOOT,
+		_______,	UG_SPDD,	UG_HUED,	UG_SATD,	UG_VALD,	UG_TOGG,															MS_WHLD,	MS_LEFT,	MS_DOWN,	MS_RGHT,	MS_ACL1,	_______,
+		_______,	_______,	_______,    UG_PREV,	UG_NEXT,	_______,	_______,	_______,			_______,	_______,	_______,	MS_BTN4,	MS_BTN3,	MS_BTN5,	MS_ACL2,	_______,
 											_______,	_______,	_______,	_______,	_______,			_______,	_______,	_______,	_______,	_______,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
-	[_YAY] = LAYOUT_split_3x6_5_hlc(
+	[_GAME] = LAYOUT_split_3x6_5_hlc(
 		_______,	_______,	W_BSPC, 	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
 		KC_ESC,		_______,	_______,	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
-		KC_LCTL,	_______,	_______,	_______,	_______,	_______,	KC_BSPC,	_______,			MO(_EXT),	_______,	_______,    _______,   	_______,	_______,	_______,	CANCEL_YAY,
-											TG(_YAY),  	TG(_YAY),	KC_LSFT,	KC_SPC,		KC_LALT,			MO(_FUN),   CANCEL_YAY,   CANCEL_YAY,   CANCEL_YAY,   CANCEL_YAY,
+		KC_LCTL,	_______,	_______,	_______,	_______,	_______,	KC_BSPC,	_______,			MO(_EXT),	_______,	_______,    _______,   	_______,	_______,	_______,	UN_YAY,
+											TG(_GAME), 	TG(_GAME),	KC_LSFT,	KC_SPC,		KC_LALT,			MO(_FUN),   UN_YAY,     UN_YAY,     UN_YAY,     UN_YAY,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	)
 };
 
 
  // disable shift
- const custom_shift_key_t custom_shift_keys[20] = {
+ const custom_shift_key_t custom_shift_keys[] = {
      {KC_GRAVE, KC_GRAVE},
      {KC_1, KC_1},
      {KC_2, KC_2},
@@ -119,7 +114,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      {KC_DOT, KC_DOT},
      {KC_SLASH, KC_SLASH},
  };
- uint8_t NUM_CUSTOM_SHIFT_KEYS = sizeof(custom_shift_keys) / sizeof(custom_shift_key_t);
 // clang-format on
 
 #ifdef ENCODER_ENABLE
@@ -144,6 +138,11 @@ bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
+bool sentence_case_changed = false;
+void sentence_case_primed(bool primed) {
+    sentence_case_changed = true;
+}
+
 // custom key handling
 bool in_fake_keypress = false;
 
@@ -161,17 +160,14 @@ void fake_keypress(uint8_t row, uint8_t col, bool pressed) {
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (!process_custom_shift_keys(keycode, record)) {
-        return false;
-    }
     switch (keycode) {
-        case CANCEL_YAY: {
-            if (record->event.pressed) layer_off(_YAY);
+        case UN_YAY: {
+            if (record->event.pressed) layer_off(_GAME);
             return true;
         }
         case INTO_YAY: {
             if (record->event.pressed) {
-                layer_on(_YAY);
+                layer_on(_GAME);
                 // repress all left thumb keys
                 uint8_t row        = 3;
                 uint8_t currentRow = matrix_get_row(row);
@@ -212,23 +208,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         }
-        case C_SWAP_ON:
+        case CSWP_ON:
             keymap_config.swap_lctl_lgui = true;
             return false;
-        case C_SWAP_OFF:
+        case CSWP_OFF:
             keymap_config.swap_lctl_lgui = false;
-            return false;
-        case AP_GLOB:
-            if (detected_host_os() == OS_IOS || detected_host_os() == OS_MACOS) {
-                host_consumer_send(record->event.pressed ? AC_NEXT_KEYBOARD_LAYOUT_SELECT : 0);
-            }
             return false;
         default:
             break;
     }
 
     // if in layer _YAY, and any left thumb keys + right side is pressed, disable layer 6 and repress as if in layer 0
-    if (record->event.pressed && !in_fake_keypress && get_highest_layer(layer_state) == _YAY // in layer
+    if (record->event.pressed && !in_fake_keypress && get_highest_layer(layer_state) == _GAME // in layer
         && matrix_get_row(3)                                                                 // left thumb keys
         && record->event.key.row >= 4                                                        // right side
     ) {
@@ -249,7 +240,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             tap_code(KC_BSPC);
         }
 
-        layer_off(_YAY);
+        layer_off(_GAME);
 
         // do left half represses from bottom to top (so thumb keys are pressed first)
         for (int row = 3; row >= 0; row--) {
@@ -312,9 +303,9 @@ enum {
 
 const uint8_t num_layers = _MAX + 1;
 
-const char *const layer_names[_MAX + 1]  = {[_BASE] = "Base", [_SYM] = "Sym", [_NUM] = "Num", [_EXT] = "Ext", [_FUN] = "Fun", [_ADJ] = "Adj", [_YAY] = "Yay"};
+const char *const layer_names[_MAX + 1]  = {[_BASE] = "Base", [_SYM] = "Sym", [_NUM] = "Num", [_EXT] = "Ext", [_FUN] = "Fun", [_ADJ] = "Adj", [_GAME] = "Yay"};
 HSV               layer_colors[_MAX + 1] = {
-    [_BASE] = {base_hue, 80, 200}, [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_YAY] = _US(yay_hue), [_ADJ] = _US(adj_hue),
+    [_BASE] = {base_hue, 80, 200}, [_SYM] = _US(sym_hue), [_NUM] = _US(num_hue), [_EXT] = _US(ext_hue), [_FUN] = _US(fun_hue), [_GAME] = _US(yay_hue), [_ADJ] = _US(adj_hue),
 };
 
 const uint8_t mod_hues[] = {ctrl_hue, shift_hue, alt_hue, super_hue};
