@@ -45,7 +45,7 @@
 #endif
 
 // Kyria
-// #if PRODUCT_ID == 0x7FCE
+#if PRODUCT_ID == 0x7FCE
     #undef ENCODER_A_PINS
     #define ENCODER_A_PINS { GP23, HLC_ENCODER_A }
     #undef ENCODER_B_PINS
@@ -64,4 +64,4 @@
         {k8A, k8B, k8C, k8D, k8E, k8F, KC_NO}, \
         {k9A, k9B, k9C, k9D, k9E, KC_NO, KC_NO} \
     }
-// #endif
+#endif

@@ -1,6 +1,7 @@
 // Copyright 2024 splitkb.com (support@splitkb.com)
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "action_util.h"
 #include "color.h"
 #include "keyboard.h"
 #include "keycode_config.h"
@@ -31,12 +32,12 @@ enum layers { _BASE = 0, _GAME, _NUM, _SYM, _EXT, _FUN, _ADJ, _MAX = _ADJ };
 enum custom_keycodes {
     UN_YAY = QK_USER,
     INTO_YAY,
+    A_TO_GME,
     FUN_NUM,
     W_BSPC, // normally W, but backspace if ALT pressed
     CSWP_ON,
     CSWP_OFF,
 };
-
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_BASE] = LAYOUT_split_3x6_5_hlc(
@@ -54,14 +55,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     										_______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 				),
 	[_NUM] = LAYOUT_split_3x6_5_hlc(
-    	INTO_YAY,	KC_GRV, 	KC_LT,	    KC_GT,	    KC_MINS,	KC_AT,																KC_PIPE,	KC_4,		KC_5,		KC_6,		_______,	_______,
+    	INTO_YAY,	A_TO_GME, 	KC_LT,	    KC_GT,	    KC_MINS,	KC_AT,																KC_PIPE,	KC_4,		KC_5,		KC_6,		_______,	_______,
     	KC_BSPC,	KC_EXLM,	KC_ASTR,	KC_SLSH,	KC_EQL,		KC_HASH,															KC_TILD,	KC_1,		KC_2,		KC_3,		KC_0,		_______,
     	_______,	KC_BSLS,	KC_PLUS,	KC_LBRC,	KC_RBRC,	KC_CIRC,	_______,	_______,			KC_COMM,	_______,    KC_DLR,     KC_7,		KC_8,		KC_9,		KC_COMM,	_______,
     										_______,	_______,	_______,	SPC_EXT,    _______,			KC_DOT,	    _______,	_______, 	_______,	_______,
 											_______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_EXT] = LAYOUT_split_3x6_5_hlc(
-		CSWP_ON,	INTO_YAY,   KC_TAB,	    CSWP_OFF,	OSM_ALT,	CTRL_B,									    		    			KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	_______,
+		_______,	INTO_YAY,   KC_TAB,	    CSWP_OFF,	CSWP_ON,	CTRL_B,									    		    			KC_PGUP,	KC_HOME,	KC_UP,		KC_END,		KC_PSCR,	_______,
 		_______,	OSM_GUI,	OSM_ALT,	OSM_SFT,    OSM_CTL,	CTRL_A,										    					KC_PGDN,	KC_LEFT,	KC_DOWN,	KC_RGHT,	KC_DEL,		CSWP_OFF,
 		MO(_FUN),	CTRL_Z,	    CTRL_X,  	CTRL_C,		KC_TAB,		CTRL_V,     _______,	_______,			_______,	_______,	_______,	KC_BSPC,	KC_APP,		_______,	KC_INS,     _______,
                                             _______,	_______,	_______,	_______,	_______,			_______,	_______,	_______,	_______,	_______,
@@ -165,6 +166,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) layer_off(_GAME);
             return true;
         }
+        case KC_TAB: {
+            return true;
+        }
         case INTO_YAY: {
             if (record->event.pressed) {
                 layer_on(_GAME);
@@ -179,6 +183,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 }
             }
             return true;
+        }
+        case A_TO_GME: {
+            if (record->event.pressed) {
+                bool alt_pressed = matrix_is_on(3, 1);
+                if (alt_pressed) fake_keypress(3, 1, false);
+                layer_move(_GAME);
+                if (alt_pressed) fake_keypress(3, 1, true);
+            }
+            return false;
         }
         case W_BSPC: {
             static uint16_t registered_keycode = KC_NO;
@@ -219,10 +232,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
 
     // if in layer _YAY, and any left thumb keys + right side is pressed, disable layer 6 and repress as if in layer 0
-    if (record->event.pressed && !in_fake_keypress && get_highest_layer(layer_state) == _GAME // in layer
-        && matrix_get_row(3)                                                                 // left thumb keys
-        && record->event.key.row >= 4                                                        // right side
-    ) {
+    if (record->event.pressed && !in_fake_keypress && get_highest_layer(layer_state) == _GAME && matrix_get_row(3) && record->event.key.row >= 4) {
         // un press all keys in earlier rows
         for (uint8_t row = 0; row <= record->event.key.row; row++) {
             uint8_t currentRow = matrix_get_row(row);
