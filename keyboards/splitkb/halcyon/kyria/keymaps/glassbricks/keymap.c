@@ -6,6 +6,7 @@
 #include "keyboard.h"
 #include "keycode_config.h"
 #include "keycodes.h"
+#include "quantum.h"
 #include "quantum_keycodes.h"
 
 #include QMK_KEYBOARD_H
@@ -50,7 +51,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_SYM] = LAYOUT_split_3x6_5_hlc(
 		_______,	KC_GRV, 	KC_LT,	    KC_GT,	    KC_MINS,	KC_AT,																KC_PIPE,	KC_PERC,	KC_QUES,    KC_AMPR,	KC_SCLN,	_______,
 		KC_BSPC,	KC_EXLM,	KC_ASTR,	KC_SLSH,	KC_EQL,		KC_HASH,														    KC_TILD,	KC_COLN,	KC_LPRN,	KC_RPRN,	KC_RCBR,	_______,
-		MO(_NUM),	KC_BSLS,	KC_PLUS,	KC_LBRC,	KC_RBRC,	KC_CIRC,	KC_UNDS,	_______,			_______,	_______,	KC_DLR,		KC_LCBR,	KC_COMM,	KC_DOT,		KC_DQUO,	_______,
+		_______,	KC_BSLS,	KC_PLUS,	KC_LBRC,	KC_RBRC,	KC_CIRC,	KC_UNDS,	_______,			_______,	_______,	KC_DLR,		KC_LCBR,	KC_COMM,	KC_DOT,		KC_DQUO,	_______,
     										_______,	_______,	_______,	SPC_EXT,    _______,			_______,	_______,	_______,	_______,	_______,
     										_______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 				),
@@ -119,16 +120,25 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 #ifdef ENCODER_ENABLE
 bool encoder_update_user(uint8_t index, bool clockwise) {
-    // Volume up/down
-    if (clockwise) {
-        tap_code(KC_VOLU);
+    bool do_scroll = (get_mods() & MOD_MASK_SHIFT) || IS_LAYER_ON(_EXT) || IS_LAYER_ON(_SYM);
+
+    if (do_scroll) {
+        if (clockwise) {
+            tap_code(MS_WHLD);
+        } else {
+            tap_code(MS_WHLU);
+        }
     } else {
-        tap_code(KC_VOLD);
+        // Volume up/down
+        if (clockwise) {
+            tap_code(KC_VOLU);
+        } else {
+            tap_code(KC_VOLD);
+        }
     }
     return false;
 }
 #endif
-
 // key configure stuff
 bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
