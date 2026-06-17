@@ -10,6 +10,7 @@
 #include "quantum_keycodes.h"
 
 #include QMK_KEYBOARD_H
+#include "transactions.h"
 
 // layout
 
@@ -86,7 +87,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_GAME] = LAYOUT_split_3x6_5_hlc(
 		_______,	_______,	W_BSPC, 	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
 		KC_ESC,		_______,	_______,	_______,	_______,	_______,															_______,	_______,	_______,	_______,	_______,	_______,
-		KC_LCTL,	_______,	_______,	_______,	_______,	_______,	KC_BSPC,	_______,			MO(_EXT),	_______,	_______,    _______,   	_______,	_______,	_______,	UN_YAY,
+		KC_LCTL,	_______,	_______,	_______,	_______,	_______,	KC_BSPC,	KC_BSLS,			MO(_EXT),	_______,	_______,    _______,   	_______,	_______,	_______,	UN_YAY,
 											TG(_GAME), 	TG(_GAME),	KC_LSFT,	KC_SPC,		KC_LALT,			MO(_FUN),   UN_YAY,     UN_YAY,     UN_YAY,     UN_YAY,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	)
@@ -182,6 +183,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case INTO_YAY: {
             if (record->event.pressed) {
                 layer_on(_GAME);
+                keymap_config.swap_lctl_lgui = false;
                 // repress all left thumb keys
                 uint8_t row        = 3;
                 uint8_t currentRow = matrix_get_row(row);
@@ -199,6 +201,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 bool alt_pressed = matrix_is_on(3, 1);
                 if (alt_pressed) fake_keypress(3, 1, false);
                 layer_move(_GAME);
+                keymap_config.swap_lctl_lgui = false;
                 if (alt_pressed) fake_keypress(3, 1, true);
             }
             return false;
@@ -241,7 +244,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             break;
     }
 
-    // if in layer _YAY, and any left thumb keys + right side is pressed, disable layer 6 and repress as if in layer 0
+    // if in layer _GAME, and any left thumb keys + right side is pressed, disable layer 6 and repress as if in layer 0
     if (record->event.pressed && !in_fake_keypress && get_highest_layer(layer_state) == _GAME && matrix_get_row(3) && record->event.key.row >= 4) {
         // un press all keys in earlier rows
         for (uint8_t row = 0; row <= record->event.key.row; row++) {
@@ -440,4 +443,24 @@ void check_status_changes(void) {
         }
     }
     prev_rgb_config = rgb_matrix_config;
+}
+
+void keymap_config_sync_handler(uint8_t in_buflen, const void *in_data, uint8_t out_buflen, void *out_data) {
+    const keymap_config_t *config = (const keymap_config_t *)in_data;
+    keymap_config.raw = config->raw;
+}
+
+void keyboard_post_init_user(void) {
+    transaction_register_rpc(KEYMAP_CONFIG_SYNC, keymap_config_sync_handler);
+}
+
+void housekeeping_task_user(void) {
+    if (is_keyboard_master()) {
+        static keymap_config_t last_synced = {0};
+        if (last_synced.raw != keymap_config.raw) {
+            if (transaction_rpc_send(KEYMAP_CONFIG_SYNC, sizeof(keymap_config), &keymap_config)) {
+                last_synced.raw = keymap_config.raw;
+            }
+        }
+    }
 }
