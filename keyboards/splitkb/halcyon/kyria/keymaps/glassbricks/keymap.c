@@ -6,6 +6,7 @@
 #include "keyboard.h"
 #include "keycode_config.h"
 #include "keycodes.h"
+#include "os_detection.h"
 #include "quantum.h"
 #include "quantum_keycodes.h"
 
@@ -39,6 +40,7 @@ enum custom_keycodes {
     W_BSPC, // normally W, but backspace if ALT pressed
     CSWP_ON,
     CSWP_OFF,
+    CSWP_TG, // toggles whether CSWP_ON/CSWP_OFF do anything
 };
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -73,12 +75,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_FUN] = LAYOUT_split_3x6_5_hlc(
 		_______,	_______,	KC_MPRV,	KC_MPLY,	KC_MNXT,	KC_VOLU,											                _______,	KC_F4,		KC_F5,		KC_F6,		_______,	_______,
 		_______,	OSM_GUI,    OSM_ALT,    OSM_SFT,    OSM_CTL,	KC_VOLD,												            KC_F11,	    KC_F1,		KC_F2,		KC_F3,		KC_F10,		_______,
-		_______,	_______,	_______,	_______,	_______,	KC_MUTE,	_______,	_______,			_______,	_______,	_______,	    KC_F7,		KC_F8,		KC_F9,		KC_F12,	_______,
+		_______,	_______,	_______,	_______,	_______,	KC_MUTE,	_______,	_______,			_______,	_______,	_______,    KC_F7,		KC_F8,		KC_F9,		KC_F12,	    _______,
 											_______,	_______,	_______,	_______,	_______,			_______,	_______,	_______,	_______,	_______,
                                             _______,    _______,    _______,    _______,    _______,            _______,    _______,    _______,    _______,    _______
 	),
 	[_ADJ] = LAYOUT_split_3x6_5_hlc(
-		EE_CLR,		UG_SPDU,	UG_HUEU,	UG_SATU,	UG_VALU,	_______,															MS_WHLU,	MS_BTN1,	MS_UP,	    MS_BTN2,	MS_ACL0,	QK_BOOT,
+		EE_CLR,		UG_SPDU,	UG_HUEU,	UG_SATU,	UG_VALU,	CSWP_TG,															MS_WHLU,	MS_BTN1,	MS_UP,	    MS_BTN2,	MS_ACL0,	QK_BOOT,
 		_______,	UG_SPDD,	UG_HUED,	UG_SATD,	UG_VALD,	UG_TOGG,															MS_WHLD,	MS_LEFT,	MS_DOWN,	MS_RGHT,	MS_ACL1,	_______,
 		_______,	_______,	_______,    UG_PREV,	UG_NEXT,	_______,	_______,	_______,			_______,	_______,	_______,	MS_BTN4,	MS_BTN3,	MS_BTN5,	MS_ACL2,	_______,
 											_______,	_______,	_______,	_______,	_______,			_______,	_______,	_______,	_______,	_______,
@@ -155,6 +157,20 @@ void sentence_case_primed(bool primed) {
     sentence_case_changed = true;
 }
 
+// ctrl/meta swap keys are only live on macOS-like hosts
+bool        swap_keys_enabled = false;
+static bool swap_keys_manual  = false;
+
+static void set_swap_keys_enabled(bool enabled) {
+    swap_keys_enabled            = enabled;
+    keymap_config.swap_lctl_lgui = enabled;
+}
+
+bool process_detected_host_os_user(os_variant_t os) {
+    if (!swap_keys_manual) set_swap_keys_enabled(os == OS_MACOS || os == OS_IOS);
+    return true;
+}
+
 // custom key handling
 bool in_fake_keypress = false;
 
@@ -175,9 +191,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case UN_YAY: {
             if (record->event.pressed) layer_off(_GAME);
-            return true;
-        }
-        case KC_TAB: {
             return true;
         }
         case INTO_YAY: {
@@ -235,10 +248,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return false;
         }
         case CSWP_ON:
-            keymap_config.swap_lctl_lgui = true;
+            if (swap_keys_enabled) keymap_config.swap_lctl_lgui = true;
             return false;
         case CSWP_OFF:
-            keymap_config.swap_lctl_lgui = false;
+            if (swap_keys_enabled) keymap_config.swap_lctl_lgui = false;
+            return false;
+        case CSWP_TG:
+            if (record->event.pressed) {
+                swap_keys_manual = true;
+                set_swap_keys_enabled(!swap_keys_enabled);
+            }
             return false;
         default:
             break;
@@ -407,11 +426,20 @@ void set_status_to_rgb_color(void) {
 }
 
 void check_status_changes(void) {
-    static bool first_update = true;
+    static bool first_update           = true;
+    static bool prev_swap_keys_enabled = false;
 
     if (first_update) {
-        prev_rgb_config = rgb_matrix_config;
-        first_update    = false;
+        prev_rgb_config        = rgb_matrix_config;
+        prev_swap_keys_enabled = swap_keys_enabled;
+        first_update           = false;
+    }
+
+    if (prev_swap_keys_enabled != swap_keys_enabled) {
+        set_status_message("SwapKey", swap_keys_enabled ? "ON" : "OFF");
+        HSV color              = {HSV_WHITE};
+        status_message_color   = color;
+        prev_swap_keys_enabled = swap_keys_enabled;
     }
 
     if (memcmp(&prev_rgb_config, &rgb_matrix_config, sizeof(rgb_config_t)) != 0) {
@@ -445,9 +473,15 @@ void check_status_changes(void) {
     prev_rgb_config = rgb_matrix_config;
 }
 
+typedef struct {
+    uint16_t keymap_config_raw;
+    bool     swap_keys_enabled;
+} keymap_sync_t;
+
 void keymap_config_sync_handler(uint8_t in_buflen, const void *in_data, uint8_t out_buflen, void *out_data) {
-    const keymap_config_t *config = (const keymap_config_t *)in_data;
-    keymap_config.raw = config->raw;
+    const keymap_sync_t *sync = (const keymap_sync_t *)in_data;
+    keymap_config.raw         = sync->keymap_config_raw;
+    swap_keys_enabled         = sync->swap_keys_enabled;
 }
 
 void keyboard_post_init_user(void) {
@@ -456,10 +490,12 @@ void keyboard_post_init_user(void) {
 
 void housekeeping_task_user(void) {
     if (is_keyboard_master()) {
-        static keymap_config_t last_synced = {0};
-        if (last_synced.raw != keymap_config.raw) {
-            if (transaction_rpc_send(KEYMAP_CONFIG_SYNC, sizeof(keymap_config), &keymap_config)) {
-                last_synced.raw = keymap_config.raw;
+        static keymap_sync_t last_synced = {0};
+
+        keymap_sync_t sync = {.keymap_config_raw = keymap_config.raw, .swap_keys_enabled = swap_keys_enabled};
+        if (last_synced.keymap_config_raw != sync.keymap_config_raw || last_synced.swap_keys_enabled != sync.swap_keys_enabled) {
+            if (transaction_rpc_send(KEYMAP_CONFIG_SYNC, sizeof(sync), &sync)) {
+                last_synced = sync;
             }
         }
     }

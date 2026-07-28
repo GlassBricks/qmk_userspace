@@ -13,7 +13,8 @@
             "splitkb/halcyon/kyria/rev4",
             "glassbricks",
             {
-                "TARGET": "right"
+                "TARGET": "right",
+                "HLC_NONE": "1"
             }
         ]
     ]

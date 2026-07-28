@@ -31,6 +31,10 @@
 
 #define SPLIT_TRANSACTION_IDS_USER KEYMAP_CONFIG_SYNC
 
+// os detection
+
+#define OS_DETECTION_SINGLE_REPORT
+
 // keys
 
 #define ONESHOT_TIMEOUT 500

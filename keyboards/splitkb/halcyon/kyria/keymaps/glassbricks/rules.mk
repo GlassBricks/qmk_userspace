@@ -9,6 +9,8 @@ ENCODER_ENABLE = yes
 
 NKRO_ENABLE = yes
 
+OS_DETECTION_ENABLE = yes
+
 # Misc features
 
 KEYBOARD_SHARED_EP = yes
