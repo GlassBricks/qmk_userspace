@@ -162,8 +162,10 @@ bool        swap_keys_enabled = false;
 static bool swap_keys_manual  = false;
 
 static void set_swap_keys_enabled(bool enabled) {
-    swap_keys_enabled            = enabled;
-    keymap_config.swap_lctl_lgui = enabled;
+    swap_keys_enabled = enabled;
+    if (!enabled) {
+        keymap_config.swap_lctl_lgui = false;
+    }
 }
 
 bool process_detected_host_os_user(os_variant_t os) {
